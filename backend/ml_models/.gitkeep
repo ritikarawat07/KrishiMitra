@@ -1,0 +1,4 @@
+# This directory will contain the ML model files:
+# - yield_model.pkl
+# - irrigation_model.pkl
+# - fertilization_model.pkl
