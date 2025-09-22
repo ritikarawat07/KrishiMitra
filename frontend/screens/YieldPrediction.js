@@ -1,90 +1,280 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, KeyboardAvoidingView, Platform } from 'react-native';
-import { Card, Title, TextInput, Button, Divider, ProgressBar, RadioButton, HelperText } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { Card, Title, TextInput, Button, Divider, ProgressBar, Menu, HelperText } from 'react-native-paper';
+import * as Location from 'expo-location';
+import { MaterialIcons } from '@expo/vector-icons';
+
+// Mock sensor data function (replace with real-time fetch from Firebase or API)
+const fetchSensorData = () => {
+  return {
+    soilMoisture: (Math.random() * 50 + 30).toFixed(1), // 30-80%
+    nLevel: (Math.random() * 50 + 50).toFixed(0),
+    pLevel: (Math.random() * 50 + 40).toFixed(0),
+    kLevel: (Math.random() * 50 + 30).toFixed(0),
+  };
+};
 
 const YieldPrediction = () => {
-  const [formData, setFormData] = useState({
-    fieldId: '',
-    cropType: 'wheat',
-    soilMoisture: '',
-    temperature: '',
-    humidity: '',
-    soilPh: '',
-    nLevel: '',
-    pLevel: '',
-    kLevel: '',
+  const scrollViewRef = useRef();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [location, setLocation] = useState({});
+  const [loadingLocation, setLoadingLocation] = useState(true);
+  const [sensorData, setSensorData] = useState({
+    soilMoisture: '--',
+    nLevel: '--',
+    pLevel: '--',
+    kLevel: '--',
   });
+
+  const [formData, setFormData] = useState({
+    fieldName: '',
+    cropType: 'wheat',
+    landArea: '',
+    landUnit: 'acre',
+    location: 'Fetching location...',
+    soilMoisture: '--',
+    nLevel: '--',
+    pLevel: '--',
+    kLevel: '--',
+  });
+
+  // Available crop types
+  const cropTypes = [
+    { label: 'Wheat', value: 'wheat' },
+    { label: 'Rice', value: 'rice' },
+    { label: 'Maize', value: 'maize' },
+    { label: 'Cotton', value: 'cotton' },
+    { label: 'Sugarcane', value: 'sugarcane' },
+  ];
+
+  // Fetch device location
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setFormData(prev => ({ ...prev, location: 'Location permission denied' }));
+          return;
+        }
+
+        let location = await Location.getCurrentPositionAsync({});
+        let address = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+
+        setLocation(location.coords);
+        const city = address[0]?.city || address[0]?.region || 'Unknown location';
+        setFormData(prev => ({ ...prev, location: city }));
+      } catch (error) {
+        console.error('Error getting location:', error);
+        setFormData(prev => ({ ...prev, location: 'Unable to fetch location' }));
+      } finally {
+        setLoadingLocation(false);
+      }
+    })();
+  }, []);
+
+  // Simulate real-time sensor data (replace with actual hardware API call)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Simulate sensor data updates
+      const newSensorData = {
+        soilMoisture: (Math.random() * 50 + 30).toFixed(1), // 30-80%
+        nLevel: (Math.random() * 50 + 50).toFixed(0),
+        pLevel: (Math.random() * 50 + 40).toFixed(0),
+        kLevel: (Math.random() * 50 + 30).toFixed(0),
+      };
+      
+      setSensorData(newSensorData);
+      
+      // Update form data with new sensor readings
+      setFormData(prev => ({
+        ...prev,
+        soilMoisture: newSensorData.soilMoisture,
+        nLevel: newSensorData.nLevel,
+        pLevel: newSensorData.pLevel,
+        kLevel: newSensorData.kLevel,
+      }));
+    }, 5000); // Update every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const cropTypes = [
-    { label: 'Wheat', value: 'wheat' },
-    { label: 'Rice', value: 'rice' },
-    { label: 'Maize', value: 'maize' },
-    { label: 'Sugarcane', value: 'sugarcane' },
-    { label: 'Cotton', value: 'cotton' },
-  ];
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.fieldId) newErrors.fieldId = 'Field ID is required';
-    if (!formData.soilMoisture) newErrors.soilMoisture = 'Soil moisture is required';
-    if (!formData.temperature) newErrors.temperature = 'Temperature is required';
-    if (!formData.humidity) newErrors.humidity = 'Humidity is required';
-    if (!formData.soilPh) newErrors.soilPh = 'Soil pH is required';
-    if (!formData.nLevel) newErrors.nLevel = 'Nitrogen level is required';
-    if (!formData.pLevel) newErrors.pLevel = 'Phosphorus level is required';
-    if (!formData.kLevel) newErrors.kLevel = 'Potassium level is required';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const landUnits = ['acre', 'hectare', 'bigha', 'guntha'];
 
   const handleInputChange = (name, value) => {
     setFormData({
       ...formData,
       [name]: value
     });
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: null
-      });
-    }
+    if (errors[name]) setErrors({...errors, [name]: null});
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.fieldName) newErrors.fieldName = 'Field Name is required';
+    if (!formData.landArea) newErrors.landArea = 'Land area is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Get crop-specific data based on crop type and growth stage
+  const getCropSpecificData = (cropType) => {
+    const cropData = {
+      wheat: {
+        name: 'Wheat',
+        stages: {
+          initial: { duration: 25, water: 2.5, fertilizer: 'DAP (50kg/acre)' },
+          vegetative: { duration: 30, water: 3.5, fertilizer: 'Urea (50kg/acre)' },
+          flowering: { duration: 25, water: 4.0, fertilizer: 'MOP (25kg/acre)' },
+          maturity: { duration: 30, water: 2.5, fertilizer: 'No fertilizer needed' }
+        },
+        avgYield: 45, // quintals/acre
+        commonPests: ['Aphids', 'Termites', 'Armyworm'],
+        remedies: ['Neem oil spray', 'Garlic-chili extract', 'Biological controls']
+      },
+      rice: {
+        name: 'Rice',
+        stages: {
+          initial: { duration: 30, water: 5.0, fertilizer: 'DAP (50kg/acre)' },
+          vegetative: { duration: 40, water: 6.0, fertilizer: 'Urea (60kg/acre)' },
+          flowering: { duration: 30, water: 7.0, fertilizer: 'MOP (30kg/acre)' },
+          maturity: { duration: 30, water: 4.0, fertilizer: 'No fertilizer needed' }
+        },
+        avgYield: 35,
+        commonPests: ['Stem borer', 'Leaf folder', 'Brown plant hopper'],
+        remedies: ['Neem cake', 'Cartap hydrochloride', 'Imidacloprid']
+      },
+      // Add more crops as needed
+    };
+
+    return cropData[cropType] || {
+      name: cropType,
+      stages: {
+        initial: { duration: 30, water: 3.0, fertilizer: 'NPK (50kg/acre)' },
+        vegetative: { duration: 35, water: 4.0, fertilizer: 'Urea (50kg/acre)' },
+        flowering: { duration: 30, water: 4.5, fertilizer: 'MOP (25kg/acre)' },
+        maturity: { duration: 30, water: 2.5, fertilizer: 'No fertilizer needed' }
+      },
+      avgYield: 30,
+      commonPests: ['General pests'],
+      remedies: ['Neem oil spray', 'Organic pest control']
+    };
+  };
+
+  // Calculate growth stage based on days since planting
+  const getGrowthStage = (days) => {
+    if (days < 25) return 'initial';
+    if (days < 55) return 'vegetative';
+    if (days < 85) return 'flowering';
+    return 'maturity';
   };
 
   const handleSubmit = () => {
     if (!validateForm()) return;
-    
     setLoading(true);
-    
-    // Simulate API call
+
+    // Get current date and time
+    const now = new Date();
+    const predictionTime = now.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    // Simulate API call for predictions
     setTimeout(() => {
-      // Mock prediction result
-      setPrediction({
-        yieldPrediction: (Math.random() * 30 + 20).toFixed(2), // 20-50 quintals
-        irrigationNeeded: Math.random() > 0.5,
-        recommendedFertilizer: ['Urea', 'DAP', 'MOP', 'NPK'][Math.floor(Math.random() * 4)],
-        confidence: (Math.random() * 30 + 70).toFixed(0), // 70-100%
-      });
+      // Get crop-specific data
+      const cropData = getCropSpecificData(formData.cropType);
       
+      // Calculate days since planting (random for demo, replace with actual date)
+      const daysSincePlanting = Math.floor(Math.random() * 120);
+      const growthStage = getGrowthStage(daysSincePlanting);
+      const stageData = cropData.stages[growthStage];
+      
+      // Calculate yield based on soil conditions and growth stage
+      const soilQualityScore = (parseFloat(formData.soilMoisture) / 100) * 0.4 + 
+                             (parseFloat(formData.nLevel) / 200) * 0.2 +
+                             (parseFloat(formData.pLevel) / 100) * 0.2 +
+                             (parseFloat(formData.kLevel) / 150) * 0.2;
+      
+      const baseYield = cropData.avgYield * (0.7 + soilQualityScore * 0.6); // 70-130% of average
+      const yieldValue = Math.max(10, Math.min(100, baseYield)).toFixed(1); // Clamp between 10-100
+      
+      // Determine irrigation needs based on soil moisture and growth stage
+      const soilMoisture = parseFloat(formData.soilMoisture);
+      const needsIrrigation = soilMoisture < (growthStage === 'flowering' ? 50 : 40);
+      
+      // Get recommendations
+      const recommendations = [];
+      if (soilMoisture < 30) {
+        recommendations.push('Immediate irrigation required');
+      } else if (needsIrrigation) {
+        recommendations.push(`Irrigate with ${stageData.water} inches of water`);
+      }
+      
+      if (parseFloat(formData.nLevel) < 50) {
+        recommendations.push('Apply nitrogen-rich fertilizer');
+      }
+      if (parseFloat(formData.pLevel) < 30) {
+        recommendations.push('Apply phosphorus-rich fertilizer');
+      }
+      if (parseFloat(formData.kLevel) < 40) {
+        recommendations.push('Apply potassium-rich fertilizer');
+      }
+      
+      // Calculate confidence based on data quality
+      const confidence = Math.min(95, 70 + Math.random() * 25).toFixed(0);
+      
+      setPrediction({
+        cropType: cropData.name,
+        fieldName: formData.fieldName,
+        predictionTime,
+        yieldPrediction: yieldValue,
+        irrigationNeeded: needsIrrigation,
+        recommendedFertilizer: stageData.fertilizer,
+        pestRemedy: cropData.remedies[Math.floor(Math.random() * cropData.remedies.length)],
+        confidence,
+        soilQuality: soilQualityScore > 0.7 ? 'Excellent' : soilQualityScore > 0.5 ? 'Good' : 'Needs Improvement',
+        waterRequirement: `${stageData.water} inches`,
+        growthStage: growthStage.charAt(0).toUpperCase() + growthStage.slice(1),
+        daysToHarvest: Math.max(0, 120 - daysSincePlanting),
+        recommendations,
+        commonPests: cropData.commonPests,
+        currentStage: growthStage,
+        soilMoisture: soilMoisture.toFixed(1) + '%',
+        npkLevels: {
+          nitrogen: formData.nLevel + ' ppm',
+          phosphorus: formData.pLevel + ' ppm',
+          potassium: formData.kLevel + ' ppm'
+        }
+      });
       setLoading(false);
+      
+      // Scroll to results
+      setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollToEnd({ animated: true });
+        }
+      }, 100);
     }, 1500);
   };
 
   const resetForm = () => {
     setFormData({
-      fieldId: '',
+      fieldName: '',
       cropType: 'wheat',
+      landArea: '',
+      landUnit: 'acre',
+      location: 'Gurgaon',
       soilMoisture: '',
-      temperature: '',
-      humidity: '',
-      soilPh: '',
       nLevel: '',
       pLevel: '',
       kLevel: '',
@@ -94,257 +284,233 @@ const YieldPrediction = () => {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+      >
         <View style={styles.header}>
           <Title style={styles.headerTitle}>Yield Prediction</Title>
           <Text style={styles.subtitle}>Enter field data to get predictions</Text>
         </View>
-        
+
         <Card style={styles.formCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>Field Information</Text>
-            
+            <Text style={styles.sectionTitle}>Crop Details</Text>
+
+            {/* Field Name */}
             <TextInput
-              label="Field ID"
-              value={formData.fieldId}
-              onChangeText={(text) => handleInputChange('fieldId', text)}
+              label="Field Name"
+              value={formData.fieldName}
+              onChangeText={(text) => handleInputChange('fieldName', text)}
               mode="outlined"
               style={styles.input}
-              error={!!errors.fieldId}
+              error={!!errors.fieldName}
             />
-            {errors.fieldId && (
-              <HelperText type="error" visible={!!errors.fieldId}>
-                {errors.fieldId}
-              </HelperText>
-            )}
-            
+            {errors.fieldName && <HelperText type="error">{errors.fieldName}</HelperText>}
+
+            {/* Crop Type Dropdown */}
             <Text style={styles.label}>Crop Type</Text>
-            <View style={styles.radioGroup}>
-              {cropTypes.map((crop) => (
-                <View key={crop.value} style={styles.radioButton}>
-                  <RadioButton.Android
-                    value={crop.value}
-                    status={formData.cropType === crop.value ? 'checked' : 'unchecked'}
-                    onPress={() => handleInputChange('cropType', crop.value)}
-                    color="#4CAF50"
-                  />
-                  <Text style={styles.radioLabel}>{crop.label}</Text>
-                </View>
-              ))}
-            </View>
-            
-            <Divider style={styles.divider} />
-            <Text style={styles.sectionTitle}>Environmental Data</Text>
-            
-            <View style={styles.row}>
-              <View style={styles.inputHalf}>
-                <TextInput
-                  label="Soil Moisture (%)"
-                  value={formData.soilMoisture}
-                  onChangeText={(text) => handleInputChange('soilMoisture', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.soilMoisture}
-                />
-                {errors.soilMoisture && (
-                  <HelperText type="error">
-                    {errors.soilMoisture}
-                  </HelperText>
-                )}
-              </View>
-              
-              <View style={styles.inputHalf}>
-                <TextInput
-                  label="Temperature (°C)"
-                  value={formData.temperature}
-                  onChangeText={(text) => handleInputChange('temperature', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.temperature}
-                />
-                {errors.temperature && (
-                  <HelperText type="error">
-                    {errors.temperature}
-                  </HelperText>
-                )}
-              </View>
-            </View>
-            
-            <View style={styles.row}>
-              <View style={styles.inputHalf}>
-                <TextInput
-                  label="Humidity (%)"
-                  value={formData.humidity}
-                  onChangeText={(text) => handleInputChange('humidity', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.humidity}
-                />
-                {errors.humidity && (
-                  <HelperText type="error">
-                    {errors.humidity}
-                  </HelperText>
-                )}
-              </View>
-              
-              <View style={styles.inputHalf}>
-                <TextInput
-                  label="Soil pH"
-                  value={formData.soilPh}
-                  onChangeText={(text) => handleInputChange('soilPh', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.soilPh}
-                />
-                {errors.soilPh && (
-                  <HelperText type="error">
-                    {errors.soilPh}
-                  </HelperText>
-                )}
-              </View>
-            </View>
-            
-            <Divider style={styles.divider} />
-            <Text style={styles.sectionTitle}>Soil Nutrient Levels (ppm)</Text>
-            
-            <View style={styles.row}>
-              <View style={styles.inputThird}>
-                <TextInput
-                  label="Nitrogen (N)"
-                  value={formData.nLevel}
-                  onChangeText={(text) => handleInputChange('nLevel', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.nLevel}
-                />
-                {errors.nLevel && (
-                  <HelperText type="error">
-                    {errors.nLevel}
-                  </HelperText>
-                )}
-              </View>
-              
-              <View style={styles.inputThird}>
-                <TextInput
-                  label="Phosphorus (P)"
-                  value={formData.pLevel}
-                  onChangeText={(text) => handleInputChange('pLevel', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.pLevel}
-                />
-                {errors.pLevel && (
-                  <HelperText type="error">
-                    {errors.pLevel}
-                  </HelperText>
-                )}
-              </View>
-              
-              <View style={styles.inputThird}>
-                <TextInput
-                  label="Potassium (K)"
-                  value={formData.kLevel}
-                  onChangeText={(text) => handleInputChange('kLevel', text.replace(/[^0-9.]/g, ''))}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.kLevel}
-                />
-                {errors.kLevel && (
-                  <HelperText type="error">
-                    {errors.kLevel}
-                  </HelperText>
-                )}
-              </View>
-            </View>
-            
-            <View style={styles.buttonContainer}>
-              <Button
-                mode="outlined"
-                onPress={resetForm}
-                style={[styles.button, styles.resetButton]}
-                labelStyle={styles.resetButtonText}
-                disabled={loading}
-              >
-                Reset
-              </Button>
-              
-              <Button
-                mode="contained"
-                onPress={handleSubmit}
-                style={[styles.button, styles.submitButton]}
-                loading={loading}
-                disabled={loading}
-              >
-                {loading ? 'Predicting...' : 'Get Prediction'}
-              </Button>
-            </View>
-          </Card.Content>
-        </Card>
-        
-        {prediction && (
-          <Card style={styles.resultCard}>
-            <Card.Content>
-              <Title style={styles.resultTitle}>Prediction Results</Title>
-              
-              <View style={styles.resultItem}>
-                <Text style={styles.resultLabel}>Expected Yield:</Text>
-                <Text style={styles.resultValue}>
-                  {prediction.yieldPrediction} <Text style={styles.resultUnit}>quintals/acre</Text>
-                </Text>
-                <View style={styles.confidenceContainer}>
-                  <Text style={styles.confidenceText}>
-                    Confidence: {prediction.confidence}%
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <TouchableOpacity 
+                  onPress={() => setMenuVisible(true)}
+                  style={[styles.input, styles.dropdownInput]}
+                >
+                  <Text style={styles.dropdownText}>
+                    {cropTypes.find(crop => crop.value === formData.cropType)?.label || 'Select Crop'}
                   </Text>
+                  <MaterialIcons name="arrow-drop-down" size={24} color="#666" />
+                </TouchableOpacity>
+              }
+            >
+              {cropTypes.map((crop) => (
+                <Menu.Item
+                  key={crop.value}
+                  onPress={() => {
+                    handleInputChange('cropType', crop.value);
+                    setMenuVisible(false);
+                  }}
+                  title={crop.label}
+                />
+              ))}
+            </Menu>
+
+            {/* Land Area */}
+            <View style={styles.row}>
+              <View style={styles.inputHalf}>
+                <TextInput
+                  label="Land Area"
+                  value={formData.landArea}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  onChangeText={(text) => handleInputChange('landArea', text.replace(/[^0-9.]/g, ''))}
+                  error={!!errors.landArea}
+                  style={styles.input}
+                />
+                {errors.landArea && <HelperText type="error">{errors.landArea}</HelperText>}
+              </View>
+              <View style={styles.inputHalf}>
+                <TextInput
+                  label="Unit"
+                  value={formData.landUnit}
+                  mode="outlined"
+                  editable={false}
+                  style={styles.input}
+                />
+              </View>
+            </View>
+
+            {/* Autofetched Location */}
+            <View style={styles.locationContainer}>
+              <TextInput
+                label="Location"
+                value={formData.location}
+                mode="outlined"
+                editable={false}
+                style={[styles.input, styles.locationInput]}
+                right={
+                  loadingLocation ? (
+                    <TextInput.Icon name="loading" />
+                  ) : (
+                    <TextInput.Icon 
+                      name="crosshairs-gps" 
+                      onPress={() => {
+                        setLoadingLocation(true);
+                        // Retry getting location
+                        // ... (you can extract the location fetching logic into a separate function)
+                      }}
+                    />
+                  )
+                }
+              />
+            </View>
+
+            <Divider style={styles.divider} />
+
+            {/* Sensor Data */}
+            <Text style={styles.sectionTitle}>Real-time Sensor Data</Text>
+            <View style={styles.sensorContainer}>
+              <View style={styles.sensorItem}>
+                <Text style={styles.sensorLabel}>🌱 Soil Moisture</Text>
+                <Text style={styles.sensorValue}>{sensorData.soilMoisture}%</Text>
+                <View style={styles.progressBarContainer}>
                   <ProgressBar 
-                    progress={prediction.confidence / 100} 
-                    color="#4CAF50"
+                    progress={sensorData.soilMoisture / 100} 
+                    color={sensorData.soilMoisture < 40 ? '#ff6b6b' : '#4caf50'} 
                     style={styles.progressBar}
                   />
                 </View>
               </View>
               
-              <View style={styles.resultItem}>
-                <Text style={styles.resultLabel}>Irrigation:</Text>
-                <View style={[
-                  styles.statusBadge,
-                  prediction.irrigationNeeded 
-                    ? styles.statusWarning 
-                    : styles.statusSuccess
-                ]}>
-                  <Text style={styles.statusText}>
-                    {prediction.irrigationNeeded ? 'Required' : 'Not Required'}
-                  </Text>
+              <View style={styles.sensorRow}>
+                <View style={styles.sensorItem}>
+                  <Text style={styles.sensorLabel}>N</Text>
+                  <Text style={styles.sensorValue}>{sensorData.nLevel} ppm</Text>
+                </View>
+                <View style={styles.sensorItem}>
+                  <Text style={styles.sensorLabel}>P</Text>
+                  <Text style={styles.sensorValue}>{sensorData.pLevel} ppm</Text>
+                </View>
+                <View style={styles.sensorItem}>
+                  <Text style={styles.sensorLabel}>K</Text>
+                  <Text style={styles.sensorValue}>{sensorData.kLevel} ppm</Text>
                 </View>
               </View>
               
-              <View style={styles.resultItem}>
-                <Text style={styles.resultLabel}>Recommended Fertilizer:</Text>
-                <View style={styles.fertilizerBadge}>
-                  <Text style={styles.fertilizerText}>
-                    {prediction.recommendedFertilizer}
-                  </Text>
+              <View style={styles.lastUpdatedContainer}>
+                <MaterialIcons name="update" size={14} color="#666" />
+                <Text style={styles.lastUpdatedText}>Updated just now</Text>
+              </View>
+            </View>
+
+            {/* Submit */}
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              style={styles.submitButton}
+              loading={loading}
+              disabled={loading}
+            >
+              {loading ? 'Predicting...' : 'Get Prediction'}
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={resetForm}
+              style={[styles.resetButton, { marginTop: 10 }]}
+            >
+              Reset
+            </Button>
+          </Card.Content>
+        </Card>
+
+        {/* Prediction Results */}
+        {prediction && (
+          <Card style={styles.resultCard}>
+            <Card.Content>
+              <View style={styles.resultHeader}>
+                <Title style={styles.resultTitle}>Yield Prediction</Title>
+                <Text style={styles.resultSubtitle}>Predicted on: {prediction.predictionTime}</Text>
+                
+                <View style={styles.yieldContainer}>
+                  <Text style={styles.yieldValue}>{prediction.yieldPrediction}</Text>
+                  <Text style={styles.yieldUnit}>quintals/acre</Text>
                 </View>
               </View>
-              
+
+              <View style={styles.resultSection}>
+                <View style={styles.infoCard}>
+                  <View style={styles.infoItem}>
+                    <View style={[styles.infoIcon, {backgroundColor: 'rgba(33, 150, 243, 0.1)'}]}>
+                      <MaterialIcons name="opacity" size={24} color="#2196F3" />
+                    </View>
+                    <View>
+                      <Text style={styles.infoLabel}>Irrigation</Text>
+                      <Text style={[styles.infoValue, {color: prediction.irrigationNeeded ? '#2196F3' : '#4CAF50'}]}>
+                        {prediction.irrigationNeeded 
+                          ? prediction.recommendations?.find(r => r.includes('irrigation')) || 'Needed'
+                          : 'Not needed'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoItem}>
+                    <View style={[styles.infoIcon, {backgroundColor: 'rgba(76, 175, 80, 0.1)'}]}>
+                      <MaterialIcons name="grass" size={24} color="#4CAF50" />
+                    </View>
+                    <View>
+                      <Text style={styles.infoLabel}>Fertilizer</Text>
+                      <Text style={styles.infoValue}>{prediction.recommendedFertilizer}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.infoItem, {borderBottomWidth: 0}]}>
+                    <View style={[styles.infoIcon, {backgroundColor: 'rgba(233, 30, 99, 0.1)'}]}>
+                      <MaterialIcons name="bug-report" size={24} color="#E91E63" />
+                    </View>
+                    <View>
+                      <Text style={styles.infoLabel}>Pest Control</Text>
+                      <Text style={[styles.infoValue, {color: '#E91E63'}]}>{prediction.pestRemedy}</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
               <Button
-                mode="outlined"
+                mode="contained"
                 onPress={() => setPrediction(null)}
                 style={styles.hideButton}
-                icon="eye-off"
+                icon="close"
+                contentStyle={styles.hideButtonContent}
+                labelStyle={styles.hideButtonLabel}
               >
-                Hide Results
+                Close Report
               </Button>
             </Card.Content>
           </Card>
@@ -358,67 +524,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    padding: 16,
   },
   scrollView: {
     flex: 1,
+    width: '100%',
+  },
+  scrollViewContent: {
+    paddingBottom: 24,
   },
   header: {
-    padding: 20,
-    backgroundColor: '#4CAF50',
+    marginBottom: 20,
   },
-  headerTitle: {
-    color: 'white',
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#2e7d32',
+    marginBottom: 8,
   },
   subtitle: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 5,
+    fontSize: 16,
+    color: '#666',
   },
   formCard: {
-    margin: 15,
+    backgroundColor: '#fff',
     borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
     elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333',
+    marginBottom: 16,
   },
   input: {
-    backgroundColor: 'white',
-    marginBottom: 5,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    marginTop: 5,
-  },
-  radioGroup: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 10,
-  },
-  radioButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 20,
-    marginBottom: 5,
-  },
-  radioLabel: {
-    marginLeft: 5,
-    color: '#333',
-  },
-  divider: {
-    marginVertical: 15,
-    backgroundColor: '#e0e0e0',
+    marginBottom: 16,
+    backgroundColor: '#fff',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   inputHalf: {
     width: '48%',
@@ -426,101 +574,159 @@ const styles = StyleSheet.create({
   inputThird: {
     width: '31%',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  button: {
-    flex: 1,
-    marginHorizontal: 5,
-    borderRadius: 8,
-  },
-  resetButton: {
-    borderColor: '#4CAF50',
-  },
-  resetButtonText: {
-    color: '#4CAF50',
+  divider: {
+    marginVertical: 20,
+    backgroundColor: '#e0e0e0',
+    height: 1,
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
+    marginTop: 8,
+    backgroundColor: '#2e7d32',
+    borderRadius: 8,
+    paddingVertical: 6,
+  },
+  resetButton: {
+    borderColor: '#2e7d32',
+    borderRadius: 8,
+    paddingVertical: 6,
   },
   resultCard: {
-    margin: 15,
-    marginTop: 0,
-    borderRadius: 12,
-    elevation: 2,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 4,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
   },
-  resultTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 15,
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 0,
+    elevation: 3,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  resultItem: {
-    marginBottom: 15,
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
   },
-  resultLabel: {
+  infoIcon: {
+    marginRight: 16,
+    borderRadius: 14,
+    padding: 10,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoLabel: {
     fontSize: 15,
-    color: '#555',
-    marginBottom: 5,
-  },
-  resultValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 5,
-  },
-  resultUnit: {
-    fontSize: 14,
-    color: '#888',
-    fontWeight: 'normal',
-  },
-  confidenceContainer: {
-    marginTop: 5,
-  },
-  confidenceText: {
-    fontSize: 12,
     color: '#666',
-    marginBottom: 3,
+    marginBottom: 4,
+    fontFamily: 'sans-serif-medium',
+    letterSpacing: 0.2,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1a1a1a',
+    lineHeight: 22,
+  },
+  progressBarContainer: {
+    flex: 1,
+    height: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+    overflow: 'hidden',
+    elevation: 1,
   },
   progressBar: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#e0e0e0',
+    height: '100%',
+    backgroundColor: '#1b5e20',
+    borderRadius: 5,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+  lastUpdatedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 8,
   },
-  statusSuccess: {
+  lastUpdatedText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  yieldContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginVertical: 24,
+    marginBottom: 16,
+  },
+  yieldValue: {
+    fontSize: 56,
+    fontWeight: '700',
+    color: '#2E7D32',
+    textShadowColor: 'rgba(46, 125, 50, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  yieldUnit: {
+    fontSize: 18,
+    color: '#666',
+    marginLeft: 6,
+    fontWeight: '600',
+    opacity: 0.9,
+  },
+  confidenceValue: {
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0d47a1',
+    minWidth: 40,
+    textAlign: 'right',
+  },
+  simpleRecsContainer: {
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  simpleRecItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    minWidth: '48%',
+    elevation: 1,
+  },
+  simpleRecText: {
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#333',
+  },
+  yieldContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    marginVertical: 20,
     backgroundColor: '#e8f5e9',
-  },
-  statusWarning: {
-    backgroundColor: '#fff3e0',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  fertilizerBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e3f2fd',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    padding: 16,
     borderRadius: 12,
-  },
-  fertilizerText: {
-    color: '#1976d2',
-    fontWeight: '500',
-  },
-  hideButton: {
-    marginTop: 15,
-    borderColor: '#4CAF50',
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
   },
 });
 

@@ -1,226 +1,243 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Button } from 'react-native-paper';
-import { auth } from '../firebase';
-import { createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+"use client"
+
+// screens/Signup.js
+import { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView } from "react-native"
+import { Picker } from "@react-native-picker/picker"
+import { auth } from "../firebase"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+
+// Language options with their display names and codes
+const LANGUAGES = [
+  { label: 'English', value: 'en' },
+  { label: 'हिंदी (Hindi)', value: 'hi' },
+  { label: 'ଓଡ଼ିଆ (Odia)', value: 'or' },
+  { label: 'বাংলা (Bengali)', value: 'bn' },
+  { label: 'தமிழ் (Tamil)', value: 'ta' },
+  { label: 'తెలుగు (Telugu)', value: 'te' },
+  { label: 'मराठी (Marathi)', value: 'mr' },
+];
 
 export default function Signup({ navigation }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [confirmation, setConfirmation] = useState(null);
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const [phone, setPhone] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [fullName, setFullName] = useState("")
+  const [selectedLanguage, setSelectedLanguage] = useState('en')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSendOTP = async () => {
+  const handleSignup = async () => {
+    if (!phone || !password || !confirmPassword || !fullName) {
+      Alert.alert("Error", "Please fill in all fields")
+      return
+    }
+
+    // Password strength validation
+    const passwordRegex = /^(?=.[A-Za-z])(?=.\d)(?=.[@$!%#?&])[A-Za-z\d@$!%*#?&]{8,}$/
+    if (!passwordRegex.test(password)) {
+      Alert.alert("Error", "Password must be at least 8 characters long, include a number, and a special character")
+      return
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match")
+      return
+    }
+
+    if (phone.length < 10) {
+      Alert.alert("Error", "Please enter a valid phone number")
+      return
+    }
+
+    setLoading(true)
     try {
-      const phoneNumber = '+91' + phone;
-      const recaptcha = new RecaptchaVerifier('recaptcha', {}, auth);
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptcha);
-      setConfirmation(confirmationResult);
-      Alert.alert("OTP Sent");
-    } catch (err) {
-      Alert.alert("Error sending OTP", err.message);
-    }
-  };
+      // For Firebase Auth using email format: phone@krishimitra.com
+      const email = phone + "@krishimitra.com"
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
-  const handleVerifyOTP = async () => {
-    try {
-      await confirmation.confirm(otp);
-      const email = phone+'@krishimitra.com';
-      await createUserWithEmailAndPassword(auth, email, formData.password);
-      Alert.alert("Signup Successful");
-      navigation.navigate('Login');
+      // You can store additional user info in Firestore here
+      Alert.alert("Success", "Account created successfully!")
+      navigation.navigate("Login")
     } catch (err) {
-      Alert.alert("OTP Verification Failed", err.message);
+      Alert.alert("Signup Failed", err.message)
+    } finally {
+      setLoading(false)
     }
-  };
-
-  const handleSignup = () => {
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-    
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Signup data:', formData);
-      setLoading(false);
-      // Navigate to login after successful signup
-      navigation.navigate('Login');
-    }, 1000);
-  };
+  }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.title}>Create Account</Text>
-      
-      <View style={styles.formGroup}>
+    <ScrollView style={styles.scrollView}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join KrishiMitra to get started</Text>
+        </View>
+
+        <View style={styles.form}>
         <Text style={styles.label}>Full Name</Text>
         <TextInput
           style={styles.input}
+          value={fullName}
+          onChangeText={setFullName}
           placeholder="Enter your full name"
-          value={formData.name}
-          onChangeText={(text) => setFormData({...formData, name: text})}
+          placeholderTextColor="#999"
         />
-      </View>
 
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={formData.email}
-          onChangeText={(text) => setFormData({...formData, email: text})}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter password"
-          secureTextEntry
-          value={formData.password}
-          onChangeText={(text) => setFormData({...formData, password: text})}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Confirm Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm your password"
-          secureTextEntry
-          value={formData.confirmPassword}
-          onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
         <Text style={styles.label}>Phone Number</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your phone number"
           value={phone}
-          onChangeText={(text) => setPhone(text)}
+          onChangeText={setPhone}
           keyboardType="phone-pad"
+          placeholder="Enter your phone number"
+          placeholderTextColor="#999"
+          maxLength={15}
         />
-      </View>
 
-      {!confirmation ? 
-        <Button 
-          mode="contained" 
-          onPress={handleSendOTP}
-          style={styles.signupButton}
-          labelStyle={styles.buttonLabel}
-        >
-          Send OTP
-        </Button> :
-        <>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Enter OTP</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter OTP"
-              value={otp}
-              onChangeText={(text) => setOtp(text)}
-              keyboardType="number-pad"
-            />
-          </View>
-          <Button 
-            mode="contained" 
-            onPress={handleVerifyOTP}
-            style={styles.signupButton}
-            labelStyle={styles.buttonLabel}
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Create a password (min 8 chars, 1 number & special char)"
+          placeholderTextColor="#999"
+          secureTextEntry={!showPassword}
+        />
+        
+        <View style={styles.passwordToggle}>
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Text style={styles.toggleText}>
+              {showPassword ? 'Hide Password' : 'Show Password'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Preferred Language</Text>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={selectedLanguage}
+            onValueChange={(itemValue) => setSelectedLanguage(itemValue)}
+            style={styles.picker}
+            dropdownIconColor="#2e7d32"
           >
-            Verify OTP & Sign Up
-          </Button>
-        </>
-      }
+            {LANGUAGES.map((lang) => (
+              <Picker.Item key={lang.value} label={lang.label} value={lang.value} />
+            ))}
+          </Picker>
+        </View>
 
-      <Button 
-        mode="contained" 
-        onPress={handleSignup}
-        style={styles.signupButton}
-        labelStyle={styles.buttonLabel}
-        loading={loading}
-        disabled={loading}
-      >
-        {loading ? 'Creating Account...' : 'Sign Up'}
-      </Button>
+        <Text style={styles.label}>Confirm Password</Text>
+        <TextInput
+          style={styles.input}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          placeholder="Confirm your password"
+          placeholderTextColor="#999"
+        />
 
-      <View style={styles.loginContainer}>
-        <Text style={styles.loginText}>Already have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.loginLink}>Login</Text>
+        <TouchableOpacity style={styles.signupButton} onPress={handleSignup} disabled={loading}>
+          <Text style={styles.signupButtonText}>{loading ? "Creating Account..." : "Create Account"}</Text>
         </TouchableOpacity>
+
+          <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate("Login")}>
+            <Text style={styles.loginButtonText}>Already have an account? Login</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View id="recaptcha"/>
     </ScrollView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  contentContainer: {
+    backgroundColor: "#f5f5f5",
     padding: 20,
-    paddingTop: 40,
+  },
+  header: {
+    alignItems: "center",
+    marginTop: 40,
+    marginBottom: 30,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-    color: '#2E7D32',
+    fontWeight: "bold",
+    color: "#2e7d32",
+    marginBottom: 8,
   },
-  formGroup: {
-    marginBottom: 20,
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  form: {
+    flex: 1,
   },
   label: {
     fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
-    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
+    padding: 15,
+    marginBottom: 20,
     borderRadius: 8,
-    padding: 12,
+    backgroundColor: "#fff",
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
   },
   signupButton: {
-    marginTop: 20,
-    paddingVertical: 8,
-    backgroundColor: '#2E7D32',
+    backgroundColor: "#2e7d32",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 20,
   },
-  buttonLabel: {
+  signupButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  loginButton: {
+    alignItems: "center",
+    padding: 10,
+  },
+  loginButtonText: {
+    color: "#666",
     fontSize: 16,
-    fontWeight: 'bold',
   },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    marginBottom: 20,
+    backgroundColor: "#fff",
+    overflow: 'hidden',
   },
-  loginText: {
-    fontSize: 16,
-    color: '#666',
+  picker: {
+    height: 50,
+    width: '100%',
   },
-  loginLink: {
-    fontSize: 16,
-    color: '#2E7D32',
-    fontWeight: 'bold',
+  passwordToggle: {
+    alignItems: 'flex-end',
+    marginTop: -15,
+    marginBottom: 15,
   },
-});
+  toggleText: {
+    color: '#2e7d32',
+    fontSize: 14,
+  },
+})

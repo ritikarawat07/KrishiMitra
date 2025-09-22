@@ -4,7 +4,20 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7a42f666-045c-4651-bc54-b0a43d9befa6" name="Changes" comment="" />
+    <list default="true" id="7a42f666-045c-4651-bc54-b0a43d9befa6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/App.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/App.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/babel.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/babel.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/screens/Dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/screens/Dashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/screens/YieldPrediction.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/screens/YieldPrediction.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/screens/landing.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/screens/landing.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/screens/login.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/screens/login.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/screens/signup.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/screens/signup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/screens/welcomepage.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/screens/welcomepage.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/yarn.lock" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,10 +26,13 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 0
-}]]></component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 0
+}</component>
   <component name="ProjectId" id="32zzoqvBfj9YoLkqUDZxU8qhnaF" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -27,9 +43,11 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true"
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "main"
   }
 }]]></component>
   <component name="TaskManager">

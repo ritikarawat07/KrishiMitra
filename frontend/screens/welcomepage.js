@@ -1,9 +1,12 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-const WelcomePage = ({ navigation }) => {
+const WelcomePage = () => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -21,21 +24,15 @@ const WelcomePage = ({ navigation }) => {
 
         {/* Tagline */}
         <Text style={styles.subtitle}>AI-Powered Crop Yield Prediction and Optimization</Text>
-        <Text style={styles.subtitle}>Your Smart Farming Companion</Text>
+        <Text style={styles.tagline}>Your Intelligent Farming Companion</Text>
 
-        {/* Action Buttons */}
+        {/* Action Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
-            style={[styles.button, styles.loginButton]}
-            onPress={() => navigation.navigate('Login')}
+            style={[styles.button, styles.getStartedButton]}
+            onPress={() => navigation.navigate('landing')}
           >
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.button, styles.signupButton]}
-            onPress={() => navigation.navigate('Signup')}
-          >
-            <Text style={[styles.buttonText, {color: '#fff'}]}>Sign Up</Text>
+            <Text style={styles.getStartedButtonText}>Get Started</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -53,7 +50,7 @@ const styles = StyleSheet.create({
   },
   content: {
     width: '100%',
-    maxWidth: 600,
+    maxWidth: 500,
     alignItems: 'center',
   },
   logoContainer: {
@@ -61,8 +58,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: width * 0.5,  // Bigger logo
-    height: width * 0.5, // Maintain square shape
+    width: width * 0.5,
+    height: width * 0.5,
     marginBottom: 10,
   },
   title: {
@@ -79,21 +76,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
+  tagline: {
+    fontSize: 16,
+    color: '#e0f2fe',
+    textAlign: 'center',
+    marginBottom: 40,
+  },
   buttonContainer: {
     width: '100%',
     maxWidth: 300,
-    marginTop: 30,
+    marginTop: 20,
   },
   button: {
     width: '100%',
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginBottom: 14,
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginBottom: 15,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -102,17 +105,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  loginButton: {
+  getStartedButton: {
     backgroundColor: 'white',
+    borderWidth: 2,
+    borderColor: '#15803d',
   },
-  signupButton: {
-    backgroundColor: '#15803d',
-  },
-  buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
+  getStartedButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#15803d',
   },
+
 });
 
 export default WelcomePage;

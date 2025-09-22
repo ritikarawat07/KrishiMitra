@@ -13,6 +13,8 @@ import Dashboard from './screens/Dashboard';
 import Sensor from './screens/Sensor';
 import Mandi from './screens/Mandi';
 import YieldPrediction from './screens/YieldPrediction';
+import Landing from './screens/landing';
+import Chatbot from './screens/Chatbot';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +39,11 @@ const App = () => {
             <Stack.Screen 
               name="WelcomePage" 
               component={WelcomePage} 
+              options={{ headerShown: false }} 
+            />
+            <Stack.Screen 
+              name="landing" 
+              component={Landing} 
               options={{ headerShown: false }} 
             />
             <Stack.Screen 
@@ -73,6 +80,11 @@ const App = () => {
               name="YieldPrediction" 
               component={YieldPrediction} 
               options={{ title: 'Yield Prediction' }} 
+            />
+            <Stack.Screen 
+              name="Chatbot" 
+              component={Chatbot} 
+              options={{ title: 'AI Farming Assistant' }} 
             />
           </Stack.Navigator>
         </NavigationContainer>

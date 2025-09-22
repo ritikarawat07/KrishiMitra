@@ -1,129 +1,200 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { colors } from '../constants/theme';
+"use client"
 
-const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const navigation = useNavigation();
+import { useState } from "react"
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView } from "react-native"
+import { Picker } from "@react-native-picker/picker"
+
+// Language options with their display names and codes
+const LANGUAGES = [
+  { label: 'English', value: 'en' },
+  { label: 'हिंदी (Hindi)', value: 'hi' },
+  { label: 'ଓଡ଼ିଆ (Odia)', value: 'or' },
+  { label: 'বাংলা (Bengali)', value: 'bn' },
+  { label: 'தமிழ் (Tamil)', value: 'ta' },
+  { label: 'తెలుగు (Telugu)', value: 'te' },
+  { label: 'मराठी (Marathi)', value: 'mr' },
+];
+
+export default function Login({ navigation }) {
+  const [phone, setPhone] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('en')
+  const [loading, setLoading] = useState(false)
 
   const handleLogin = () => {
-    // Handle login logic here
-    console.log('Login with:', { email, password });
-    // For now, navigate to Home
-    navigation.navigate('Home');
-  };
+    if (!phone) {
+      Alert.alert("Error", "Please enter your phone number")
+      return
+    }
+    
+    if (!password) {
+      Alert.alert("Error", "Please enter your password")
+      return
+    }
+    
+    setLoading(true)
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false)
+      // Navigate to dashboard directly without auth
+      navigation.navigate('Dashboard')
+    }, 1000)
+  }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
-      </View>
+    <ScrollView style={styles.scrollView}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Farmer Login</Text>
+          <Text style={styles.subtitle}>Enter your credentials to continue</Text>
+        </View>
+
+        <View style={styles.languageContainer}>
+          <Text style={styles.label}>Preferred Language</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedLanguage}
+              onValueChange={(itemValue) => setSelectedLanguage(itemValue)}
+              style={styles.picker}
+              dropdownIconColor="#2e7d32"
+            >
+              {LANGUAGES.map((lang) => (
+                <Picker.Item key={lang.value} label={lang.label} value={lang.value} />
+              ))}
+            </Picker>
+          </View>
+        </View>
 
       <View style={styles.form}>
+        <Text style={styles.label}>Phone Number</Text>
         <TextInput
           style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          placeholder="Enter your phone number"
+          placeholderTextColor="#999"
         />
 
-        <TouchableOpacity style={styles.forgotPassword}>
+        <View style={styles.passwordContainer}>
+          <View style={styles.passwordHeader}>
+            <Text style={styles.label}>Password</Text>
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Text style={styles.toggleText}>
+                {showPassword ? 'Hide' : 'Show'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            placeholder="Enter your password"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+
+
+        <TouchableOpacity 
+          style={styles.loginButton} 
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          <Text style={styles.loginButtonText}>
+            {loading ? 'Logging in...' : 'Login'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.forgotPasswordLink} onPress={() => navigation.navigate("ForgotPassword")}>
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Login</Text>
-        </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text style={styles.signupText}>Sign Up</Text>
+          <TouchableOpacity style={styles.signupButton} onPress={() => navigation.navigate("Signup")}>
+            <Text style={styles.signupButtonText}>Don't have an account? Sign Up</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
-  );
-};
+    </ScrollView>
+  )
+}
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#f5f5f5",
     padding: 20,
-    justifyContent: 'center',
+  },
+  languageContainer: {
+    marginBottom: 20,
   },
   header: {
+    alignItems: "center",
+    marginTop: 60,
     marginBottom: 40,
-    alignItems: 'center',
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: 10,
+    fontWeight: "bold",
+    color: "#2e7d32",
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: colors.gray,
+    color: "#666",
+    textAlign: "center",
   },
   form: {
-    width: '100%',
+    flex: 1,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: colors.lightGray,
+    borderWidth: 1,
+    borderColor: "#ddd",
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
+    marginBottom: 20,
+    borderRadius: 8,
+    backgroundColor: "#fff",
     fontSize: 16,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  loginButton: {
+    backgroundColor: "#2e7d32",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  loginButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  forgotPasswordLink: {
+    alignItems: "center",
     marginBottom: 20,
   },
   forgotPasswordText: {
-    color: colors.primary,
-    fontSize: 14,
+    color: "#2e7d32",
+    fontSize: 16,
+    fontWeight: "500",
   },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 20,
+  signupButton: {
+    alignItems: "center",
+    padding: 10,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  signupButtonText: {
+    color: "#666",
+    fontSize: 16,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    color: colors.gray,
-  },
-  signupText: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
-});
-
-export default Login;
+})
